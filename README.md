@@ -2,9 +2,9 @@
 
 This project is a modern, cloud-based Zero Trust Authentication Platform built to handle secure user authentication, risk-based adaptive actions, Multi-Factor Authentication (MFA), and active threat monitoring.
 
-## 🚀 Current Status
+## Current Status
 
-- **Phase 1: Project Scaffolding and Configuration** - ✅ Complete
+- **Phase 1: Project Scaffolding and Configuration** - Complete
   - Backend skeleton with Express, MongoDB, and Redis configuration is set up.
   - Frontend skeleton with React, Vite, React Router, and a full glassmorphism design system is set up.
 
@@ -12,7 +12,7 @@ This project is a modern, cloud-based Zero Trust Authentication Platform built t
 
 ---
 
-## 🛠️ Getting Started (Local Development)
+## Getting Started (Local Development)
 
 This system is organized as a monorepo consisting of a Node-based backend and a React-based frontend. Follow these instructions to run both locally.
 
@@ -55,6 +55,6 @@ This system is organized as a monorepo consisting of a Node-based backend and a 
 
 ---
 
-## 📚 Documentation
+## Documentation
 - **[implementation.md](./implementation.md)**: Contains the comprehensive technical roadmap, architectures, and the 8-phase deployment plan.
 - **[idea.md](./idea.md)**: Contains the incremental step-by-step checklist guiding the ongoing active development.
