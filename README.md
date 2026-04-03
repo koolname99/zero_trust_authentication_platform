@@ -55,6 +55,14 @@ This system is organized as a monorepo consisting of a Node-based backend and a 
 
 ---
 
+## Docker
+
+- Start MongoDB and Redis in the background with `docker compose up -d`
+- Stop them with `docker compose down`
+- Stop and wipe all data with `docker compose down -v`
+
+---
+
 ## Documentation
 - **[implementation.md](./implementation.md)**: Contains the comprehensive technical roadmap, architectures, and the 8-phase deployment plan.
 - **[idea.md](./idea.md)**: Contains the incremental step-by-step checklist guiding the ongoing active development.
