@@ -10,12 +10,17 @@ validateEnv();
 const logger = require('./utils/logger');
 const connectDB = require('./config/db');
 const { connectRedis } = require('./config/redis');
+const requestLogger = require('./middleware/requestLogger');
+const authRoutes = require('./routes/authRoutes');
+const mfaRoutes = require('./routes/mfaRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
 // ---------------------
 // Security Middleware
 // ---------------------
+app.use(requestLogger);
 app.use(helmet());
 app.use(cors({
   origin: env.isDev ? 'http://localhost:5173' : process.env.FRONTEND_URL,
@@ -41,11 +46,11 @@ app.get('/health', (req, res) => {
 });
 
 // ---------------------
-// API Routes (will be added in later steps)
+// API Routes
 // ---------------------
-// app.use('/api/auth', authRoutes);
-// app.use('/api/mfa', mfaRoutes);
-// app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/mfa', mfaRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 // app.use('/api/attacks', attackSimRoutes);
 // app.use('/api/scans', scanRoutes);
 

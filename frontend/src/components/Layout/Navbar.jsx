@@ -1,8 +1,17 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { FiShield, FiUser } from 'react-icons/fi';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiShield, FiUser, FiLogOut } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <nav className="glass-panel" style={styles.navbar}>
       <div style={styles.brand}>
@@ -10,9 +19,19 @@ const Navbar = () => {
         <Link to="/" style={styles.brandLink}>ZeroTrust</Link>
       </div>
       <div style={styles.navLinks}>
-        <Link to="/login" style={styles.link} className="glass-panel">Login</Link>
-        <Link to="/register" style={{...styles.link, ...styles.primaryBtn}}>Register</Link>
-        <FiUser style={styles.userIcon} />
+        {isAuthenticated ? (
+          <>
+            <span style={styles.userInfo}><FiUser /> {user?.email}</span>
+            <button onClick={handleLogout} style={styles.logoutBtn} className="glass-panel">
+              <FiLogOut /> Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" style={styles.link} className="glass-panel">Login</Link>
+            <Link to="/register" style={{...styles.link, ...styles.primaryBtn}}>Register</Link>
+          </>
+        )}
       </div>
     </nav>
   );
@@ -36,7 +55,13 @@ const styles = {
   navLinks: { display: 'flex', alignItems: 'center', gap: '1rem' },
   link: { color: 'var(--text-primary)', textDecoration: 'none', padding: '0.5rem 1rem', borderRadius: '4px', fontSize: '0.9rem', transition: 'var(--transition-fast)' },
   primaryBtn: { backgroundColor: 'var(--accent-purple)', color: 'white', fontWeight: '500' },
-  userIcon: { color: 'var(--text-secondary)', fontSize: '1.2rem', cursor: 'pointer', marginLeft: '1rem' }
+  userInfo: { display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', marginRight: '1rem' },
+  logoutBtn: { 
+    display: 'flex', alignItems: 'center', gap: '0.5rem', 
+    color: 'var(--accent-rose)', background: 'transparent',
+    border: '1px solid var(--border-color)', padding: '0.5rem 1rem', 
+    borderRadius: '4px', cursor: 'pointer', transition: 'var(--transition-fast)'
+  }
 };
 
 export default Navbar;
