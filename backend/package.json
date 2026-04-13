@@ -9,7 +9,7 @@
     "test": "jest --verbose --forceExit --detectOpenHandles"
   },
   "dependencies": {
-    "express": "^4.21.0",
+    "express": "^5.2.1",
     "mongoose": "^9.3.3",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^3.0.3",
