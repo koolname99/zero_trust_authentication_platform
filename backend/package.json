@@ -25,7 +25,7 @@
     "rate-limit-redis": "^4.2.0",
     "cookie-parser": "^1.4.7",
     "crypto-js": "^4.2.0",
-    "geoip-lite": "^1.4.10",
+    "geoip-lite": "^2.0.1",
     "ua-parser-js": "^1.0.39"
   },
   "devDependencies": {
