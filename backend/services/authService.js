@@ -39,24 +39,24 @@ async function login(email, password, deviceInfo) {
   }
 
   if (user.isLockedOut()) {
-    await AuditLog.create({ userId: user._id, action: AUDIT_ACTIONS.ACCOUNT_LOCKED, ipAddress: deviceInfo.ipAddress, userAgent: deviceInfo.userAgent });
-    //throw new Error('Account is locked due to too many failed attempts. Try again later.');
+    const riskResult = await riskEvaluator.evaluateRiskAndEnforce(user._id, deviceInfo); // Evaluate risk to show score in web audit log
+    await AuditLog.create({ userId: user._id, action: AUDIT_ACTIONS.ACCOUNT_LOCKED, ipAddress: deviceInfo.ipAddress, userAgent: deviceInfo.userAgent, riskScore: riskResult.score });
+    //throw new Error('Account is locked due to too many failed attempts. Try again later.'); // This will instead be caught by regular risk score behavior further down
   }
 
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
     user.failedLoginAttempts += 1;
-    //if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
-    //  user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60000);
-    //}
+    //if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60000); // Done implicitly further down
     await user.save();
 
-    await AuditLog.create({ userId: user._id, action: AUDIT_ACTIONS.LOGIN_FAILURE, ipAddress: deviceInfo.ipAddress, userAgent: deviceInfo.userAgent });
+    const riskResult = await riskEvaluator.evaluateRiskAndEnforce(user._id, deviceInfo); // Evaluate risk to show score in web audit log
+    await AuditLog.create({ userId: user._id, action: AUDIT_ACTIONS.LOGIN_FAILURE, ipAddress: deviceInfo.ipAddress, userAgent: deviceInfo.userAgent, riskScore: riskResult.score });
     throw new Error('Invalid email or password');
   }
 
-  // Evaluate Risk before granting access
+  // Evaluate risk before granting access
   const riskResult = await riskEvaluator.evaluateRiskAndEnforce(user._id, deviceInfo);
 
   // Success
@@ -68,11 +68,16 @@ async function login(email, password, deviceInfo) {
   // high enough. Without that guard, MFA-disabled users get logged in but the
   // outcome is recorded as CHALLENGED — so the profile never learns and every
   // future login re-triggers the same risk factors.
-  const willChallengeMfa = user.mfaEnabled && riskResult.responseAction.includes('MFA');
+  // Gate on the actual secret rather than the mfaEnabled flag — the flag can
+  // drift but the secret is what makes MFA verifiable.
+  const willChallengeMfa = user.mfaEnabled && !!user.mfaSecret && riskResult.responseAction.includes('MFA');
   let outcome;
-  if (riskResult.responseAction === 'BLOCK') outcome = 'BLOCKED';
-  else if (willChallengeMfa) outcome = 'CHALLENGED';
-  else outcome = 'SUCCESS';
+  if (riskResult.responseAction === 'BLOCK')
+    outcome = 'BLOCKED';
+  else if (willChallengeMfa)
+    outcome = 'CHALLENGED';
+  else
+    outcome = 'SUCCESS';
 
   const historyEntry = {
     ipAddress: deviceInfo.ipAddress,
@@ -103,7 +108,7 @@ async function login(email, password, deviceInfo) {
   }
 
   // If MFA is required
-  if (user.mfaEnabled && (riskResult.responseAction.includes('MFA') || riskResult.responseAction.includes('BLOCK'))) {
+  if (willChallengeMfa) {
     const mfaToken = tokenService.generateMfaToken(user, riskResult.score);
     // Don't generate actual sessions yet
     return {

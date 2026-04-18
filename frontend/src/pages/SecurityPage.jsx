@@ -6,17 +6,35 @@ import MFASetup from '../components/Auth/MFASetup';
 const SecurityPage = () => {
   const [users, setUsers] = useState(null);
   const [removing, setRemoving] = useState(null);
+  const [toggling, setToggling] = useState(null);
 
   const handleRemoveMfa = async (id) => {
     setRemoving(id);
     try {
       await dashboardService.removeUserMfa(id);
-      setUsers(prev => prev.map(u => u._id === id ? { ...u, mfaEnabled: false } : u));
+      setUsers(prev => prev.map(u => u._id === id ? { ...u, mfaEnabled: false, mfaConfigured: false } : u));
       toast.success('MFA removed');
     } catch {
       toast.error('Failed to remove MFA');
     }
     setRemoving(null);
+  };
+
+  const handleToggleMfa = async (id, next) => {
+    setToggling(id);
+    try {
+      const result = await dashboardService.setUserMfaEnabled(id, next);
+      setUsers(prev => prev.map(u => u._id === id ? { ...u, mfaEnabled: result.mfaEnabled, mfaConfigured: result.mfaConfigured } : u));
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update MFA');
+    }
+    setToggling(null);
+  };
+
+  const statusOf = (u) => {
+    if (u.mfaEnabled && u.mfaConfigured) return { label: 'Enabled', style: styles.badgeOn };
+    if (u.mfaConfigured) return { label: 'Disabled', style: styles.badgeConfigured };
+    return { label: 'Unconfigured', style: styles.badgeOff };
   };
 
   useEffect(() => {
@@ -47,35 +65,45 @@ const SecurityPage = () => {
                   <th style={styles.th}>Role</th>
                   <th style={styles.th}>MFA</th>
                   <th style={styles.th}>Registered</th>
-                  <th style={styles.th}>Action</th>
+                  <th style={styles.th}>Enabled</th>
+                  <th style={styles.th}>Delete</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
-                  <tr key={u._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <td style={styles.td}>{u.email}</td>
-                    <td style={{ ...styles.td, color: 'var(--text-secondary)' }}>{u.role}</td>
-                    <td style={styles.td}>
-                      <span style={u.mfaEnabled ? styles.badgeOn : styles.badgeOff}>
-                        {u.mfaEnabled ? 'Enabled' : 'Disabled'}
-                      </span>
-                    </td>
-                    <td style={{ ...styles.td, color: 'var(--text-secondary)' }}>
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
-                    <td style={styles.td}>
-                      {u.mfaEnabled && (
-                        <button
-                          onClick={() => handleRemoveMfa(u._id)}
-                          disabled={removing === u._id}
-                          style={styles.removeBtn}
-                        >
-                          {removing === u._id ? 'Removing...' : 'Remove MFA'}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {users.map((u) => {
+                  const status = statusOf(u);
+                  const busy = removing === u._id || toggling === u._id;
+                  return (
+                    <tr key={u._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <td style={styles.td}>{u.email}</td>
+                      <td style={{ ...styles.td, color: 'var(--text-secondary)' }}>{u.role}</td>
+                      <td style={styles.td}><span style={status.style}>{status.label}</span></td>
+                      <td style={{ ...styles.td, color: 'var(--text-secondary)' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td style={styles.td}>
+                        {u.mfaConfigured && (
+                          <input
+                            type="checkbox"
+                            checked={u.mfaEnabled}
+                            disabled={busy}
+                            onChange={(e) => handleToggleMfa(u._id, e.target.checked)}
+                            title="Require MFA on risky logins"
+                          />
+                        )}
+                      </td>
+                      <td style={styles.td}>
+                        {u.mfaConfigured && (
+                          <button
+                            onClick={() => handleRemoveMfa(u._id)}
+                            disabled={busy}
+                            style={styles.removeBtn}
+                          >
+                            {removing === u._id ? 'Removing...' : 'Remove MFA'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -144,6 +172,15 @@ const styles = {
     background: 'rgba(251, 113, 133, 0.15)',
     color: 'var(--accent-rose)',
     border: '1px solid var(--accent-rose)',
+  },
+  badgeConfigured: {
+    padding: '0.2rem 0.6rem',
+    borderRadius: '999px',
+    fontSize: '0.8rem',
+    fontWeight: '600',
+    background: 'rgba(251, 146, 60, 0.15)',
+    color: '#fb923c',
+    border: '1px solid #fb923c',
   },
   muted: {
     color: 'var(--text-secondary)',

@@ -103,10 +103,21 @@ router.delete('/sessions/:id', async (req, res, next) => {
  */
 router.get('/users', async (req, res, next) => {
   try {
+    // mfaEnabled is the user's willingness toggle; mfaConfigured reflects
+    // whether a secret actually exists. The UI needs both to show the
+    // three-state Disabled/Configured/Enabled label.
     const users = await User.find()
-      .select('email role mfaEnabled createdAt')
-      .sort({ createdAt: -1 });
-    res.json(users);
+      .select('email role mfaEnabled mfaSecret createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(users.map((u) => ({
+      _id: u._id,
+      email: u.email,
+      role: u.role,
+      createdAt: u.createdAt,
+      mfaEnabled: !!u.mfaEnabled,
+      mfaConfigured: !!u.mfaSecret,
+    })));
   } catch (err) {
     next(err);
   }
@@ -178,15 +189,43 @@ router.delete('/users/:id', async (req, res, next) => {
  * DELETE /api/dashboard/users/:id/mfa
  * Clears MFA configuration for any user
  */
-router.delete('/users/:id/mfa', async (req, res, next) => {
+/**
+ * PATCH /api/dashboard/users/:id/mfa-enabled
+ * Toggles whether MFA is enforced for the user. Rejects enabling when no
+ * secret is configured — there is nothing to challenge against.
+ */
+router.patch('/users/:id/mfa-enabled', async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const { enabled } = req.body;
+    if (typeof enabled !== 'boolean') return res.status(400).json({ error: 'enabled must be a boolean' });
+
+    const user = await User.findById(req.params.id).select('mfaSecret mfaEnabled');
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    user.mfaEnabled = false;
-    user.mfaSecret = undefined;
-    user.recoveryCodes = [];
+    if (enabled && !user.mfaSecret) {
+      return res.status(400).json({ error: 'Cannot enable MFA: no authenticator is configured' });
+    }
+
+    user.mfaEnabled = enabled;
     await user.save();
+
+    res.json({ mfaEnabled: user.mfaEnabled, mfaConfigured: !!user.mfaSecret });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/users/:id/mfa', async (req, res, next) => {
+  try {
+    // $unset is used (rather than assigning undefined on a fetched doc) because
+    // mongoose does not reliably persist `field = undefined` as a document-level
+    // unset — which previously left users in an inconsistent mfaEnabled=false /
+    // mfaSecret=present state.
+    const result = await User.updateOne(
+      { _id: req.params.id },
+      { $set: { mfaEnabled: false }, $unset: { mfaSecret: '', recoveryCodes: '' } }
+    );
+    if (result.matchedCount === 0) return res.status(404).json({ error: 'User not found' });
 
     res.json({ message: 'MFA configuration removed successfully' });
   } catch (err) {

@@ -33,6 +33,10 @@ const dashboardService = {
     const response = await api.delete(`/api/dashboard/users/${id}/mfa`);
     return response.data;
   },
+  setUserMfaEnabled: async (id, enabled) => {
+    const response = await api.patch(`/api/dashboard/users/${id}/mfa-enabled`, { enabled });
+    return response.data;
+  },
 };
 
 export default dashboardService;
