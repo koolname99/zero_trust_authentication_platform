@@ -24,9 +24,9 @@ function generateAccessToken(user, sessionId) {
 }
 
 // Generate Temporary MFA Token
-function generateMfaToken(user) {
+function generateMfaToken(user, riskScore) {
   return jwt.sign(
-    { userId: user._id.toString(), type: 'mfa_pending' },
+    { userId: user._id.toString(), type: 'mfa_pending', riskScore },
     env.JWT_ACCESS_SECRET,
     { expiresIn: '5m' }
   );

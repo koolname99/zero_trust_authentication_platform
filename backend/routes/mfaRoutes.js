@@ -27,6 +27,7 @@ async function requireMfaToken(req, res, next) {
     if (!user) return res.status(401).json({ error: 'User not found' });
     
     req.user = user;
+    req.mfaDecoded = decoded;
     next();
   } catch (err) {
     res.status(500).json({ error: 'MFA parsing error' });
@@ -84,6 +85,7 @@ router.post('/verify', requireMfaToken, async (req, res, next) => {
       action: AUDIT_ACTIONS.LOGIN_SUCCESS,
       ipAddress: deviceInfo.ipAddress,
       userAgent: deviceInfo.userAgent,
+      riskScore: req.mfaDecoded.riskScore,
     });
 
     res.cookie('refreshToken', refreshToken, {
