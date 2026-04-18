@@ -4,7 +4,7 @@ const AuditLog = require('../models/AuditLog');
 const crypto = require('crypto');
 const tokenService = require('./tokenService');
 const riskEvaluator = require('../middleware/riskEvaluator');
-const { AUDIT_ACTIONS, MAX_FAILED_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES } = require('../utils/constants');
+const { AUDIT_ACTIONS, MAX_FAILED_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES, RISK_THRESHOLDS } = require('../utils/constants');
 const { env } = require('../config/environment');
 
 /**
@@ -33,7 +33,7 @@ async function register(email, password, ipAddress, userAgent) {
 
 async function login(email, password, deviceInfo) {
   const user = await User.findOne({ email });
-  
+
   if (!user) {
     throw new Error('Invalid email or password');
   }
@@ -44,14 +44,14 @@ async function login(email, password, deviceInfo) {
   }
 
   const isMatch = await user.comparePassword(password);
-  
+
   if (!isMatch) {
     user.failedLoginAttempts += 1;
     if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
       user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60000);
     }
     await user.save();
-    
+
     await AuditLog.create({ userId: user._id, action: AUDIT_ACTIONS.LOGIN_FAILURE, ipAddress: deviceInfo.ipAddress, userAgent: deviceInfo.userAgent });
     throw new Error('Invalid email or password');
   }
@@ -76,13 +76,13 @@ async function login(email, password, deviceInfo) {
   };
 
   riskResult.profile.addLoginHistory(historyEntry);
-  
+
   if (historyEntry.outcome === 'SUCCESS') {
     if (!riskResult.profile.knownIPs.includes(deviceInfo.ipAddress)) riskResult.profile.knownIPs.push(deviceInfo.ipAddress);
     if (!riskResult.profile.knownDevices.includes(deviceInfo.fingerprint) && deviceInfo.fingerprint !== 'unknown') riskResult.profile.knownDevices.push(deviceInfo.fingerprint);
     if (!riskResult.profile.knownGeoLocations.includes(riskResult.geoString) && riskResult.location.country !== 'UNKNOWN') riskResult.profile.knownGeoLocations.push(riskResult.geoString);
   }
-  
+
   await riskResult.profile.save();
 
   if (riskResult.responseAction === 'BLOCK') {
@@ -92,8 +92,10 @@ async function login(email, password, deviceInfo) {
     throw new Error('Security violation: Login blocked due to critical risk factors. Account automatically locked.');
   }
 
+  // TODO: what happens when authenticator is required but not set up?
   // If MFA is required (either by user setting or risk score)
-  if (user.mfaEnabled || riskResult.responseAction.includes('MFA')) {
+  //if (user.mfaEnabled || riskResult.responseAction.includes('MFA')) { // Always requires authenticator if enabled
+  if (user.mfaEnabled && riskResult.responseAction.includes('MFA')) { // Only require authenticator if enabled and risk is medium
     const mfaToken = tokenService.generateMfaToken(user, riskResult.score);
     // Don't generate actual sessions yet
     return {
