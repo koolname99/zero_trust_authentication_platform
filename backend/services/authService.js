@@ -64,6 +64,16 @@ async function login(email, password, deviceInfo) {
   user.lockoutUntil = undefined;
   await user.save();
 
+  // MFA is only actually challenged when the user has MFA enabled AND risk is
+  // high enough. Without that guard, MFA-disabled users get logged in but the
+  // outcome is recorded as CHALLENGED — so the profile never learns and every
+  // future login re-triggers the same risk factors.
+  const willChallengeMfa = user.mfaEnabled && riskResult.responseAction.includes('MFA');
+  let outcome;
+  if (riskResult.responseAction === 'BLOCK') outcome = 'BLOCKED';
+  else if (willChallengeMfa) outcome = 'CHALLENGED';
+  else outcome = 'SUCCESS';
+
   const historyEntry = {
     ipAddress: deviceInfo.ipAddress,
     country: riskResult.location.country,
@@ -71,14 +81,13 @@ async function login(email, password, deviceInfo) {
     latitude: riskResult.location.latitude,
     longitude: riskResult.location.longitude,
     deviceFingerprint: deviceInfo.fingerprint,
-    outcome: riskResult.responseAction === 'BLOCK' ? 'BLOCKED' : (riskResult.responseAction.includes('MFA') ? 'CHALLENGED' : 'SUCCESS'),
+    outcome,
     riskScore: riskResult.score
   };
 
   riskResult.profile.addLoginHistory(historyEntry);
 
-  // TODO: won't happen if MFA login?
-  if (historyEntry.outcome === 'SUCCESS') {
+  if (outcome === 'SUCCESS') {
     if (!riskResult.profile.knownIPs.includes(deviceInfo.ipAddress)) riskResult.profile.knownIPs.push(deviceInfo.ipAddress);
     if (!riskResult.profile.knownDevices.includes(deviceInfo.fingerprint) && deviceInfo.fingerprint !== 'unknown') riskResult.profile.knownDevices.push(deviceInfo.fingerprint);
     if (!riskResult.profile.knownGeoLocations.includes(riskResult.geoString) && riskResult.location.country !== 'UNKNOWN') riskResult.profile.knownGeoLocations.push(riskResult.geoString);
