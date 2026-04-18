@@ -12,7 +12,7 @@ const RISK_THRESHOLDS = {
 };
 
 const RATE_LIMITS = {
-  REGISTER: { windowMs: 60 * 60 * 1000, max: 5 },     // 5 per hour per IP
+  REGISTER: { windowMs: 60 * 60 * 1000, max: 5 },       // 5 per hour per IP
   LOGIN: { windowMs: 60 * 1000, max: 10 },              // 10 per minute per IP
   REFRESH: { windowMs: 60 * 60 * 1000, max: 30 },       // 30 per hour
   GENERAL: { windowMs: 15 * 60 * 1000, max: 100 },      // 100 per 15 min

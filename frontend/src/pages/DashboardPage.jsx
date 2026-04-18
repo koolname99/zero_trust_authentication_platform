@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import dashboardService from '../services/dashboardService';
 import SecurityOverview from '../components/Dashboard/SecurityOverview';
 import RiskScoreChart from '../components/Dashboard/RiskScoreChart';
@@ -28,7 +28,7 @@ const DashboardPage = () => {
       setLogs(logsData);
       setSessions(sessionsData);
     } catch (err) {
-      toast.error('Failed to load real-time telemetry.');
+      toast.error('Failed to load real-time telemetry: ' + err.message);
     }
   };
 
@@ -48,7 +48,7 @@ const DashboardPage = () => {
             Welcome back, <strong style={{ color: 'var(--accent-cyan)' }}>{userEmailName(user)}</strong>
           </p>
         </div>
-        
+
         <div style={styles.tabs}>
            <button style={activeTab === 'DASHBOARD' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('DASHBOARD')}>Telemetry</button>
            <button style={activeTab === 'MFA' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('MFA')}>MFA Config</button>

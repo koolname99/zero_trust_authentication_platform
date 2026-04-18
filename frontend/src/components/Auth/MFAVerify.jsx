@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 const MFAVerify = ({ mfaToken }) => {
   const [code, setCode] = useState(['', '', '', '', '', '']);

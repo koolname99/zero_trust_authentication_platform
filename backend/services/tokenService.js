@@ -53,8 +53,9 @@ async function generateRefreshToken(user, sessionId, deviceInfo) {
   const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
   const expiresAt = new Date(Date.now() + ms(env.JWT_REFRESH_EXPIRY || '7d'));
 
-  // Create session entry
+  // Create session entry, using actualSessionId as _id so it matches the JWT payload
   const session = await Session.create({
+    _id: actualSessionId,
     userId: user._id,
     refreshTokenHash,
     deviceFingerprint: deviceInfo.fingerprint,
@@ -82,7 +83,7 @@ async function isBlacklisted(jti) {
     const redisClient = getRedisClient();
     if (!redisClient || redisClient.status !== 'ready') return false;
     
-    const result = await redisClient.get(`bl_${jti}`);
+    const result = await redisClient.get(`blacklist:${jti}`);
     return result === 'true';
   } catch (err) {
     // Fail open if Redis is down

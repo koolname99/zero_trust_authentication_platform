@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import authService from '../services/authService';
 import api from '../services/api';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-      
+
       try {
         const userData = await authService.getCurrentUser();
         setUser(userData);
@@ -32,6 +32,17 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
+  }, []);
+
+  // Listen for session expiry signalled by the API interceptor
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      setIsAuthenticated(false);
+      toast.error('Session expired. Please log in again.');
+    };
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
   }, []);
 
   const login = async (email, password) => {
@@ -90,4 +101,3 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);

@@ -9,7 +9,8 @@ import RegisterPage from './pages/RegisterPage';
 import ProtectedRoute from './components/Shared/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 
 function AppLayout() {
   const { isAuthenticated } = useAuth();
