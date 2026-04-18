@@ -41,3 +41,21 @@ const logger = winston.createLogger({
 });
 
 module.exports = logger;
+
+const riskLogFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.printf(({ timestamp, message }) => `${timestamp} [RISK] ${message}`)
+);
+
+const riskLogger = winston.createLogger({
+  format: riskLogFormat,
+  transports: [
+    new winston.transports.File({
+      filename: path.join(logDir, 'risk.log'),
+      maxsize: 5 * 1024 * 1024,
+      maxFiles: 5,
+    }),
+  ],
+});
+
+module.exports.riskLogger = riskLogger;

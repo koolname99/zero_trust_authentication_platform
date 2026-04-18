@@ -40,29 +40,29 @@ async function login(email, password, deviceInfo) {
 
   if (user.isLockedOut()) {
     await AuditLog.create({ userId: user._id, action: AUDIT_ACTIONS.ACCOUNT_LOCKED, ipAddress: deviceInfo.ipAddress, userAgent: deviceInfo.userAgent });
-    throw new Error('Account is locked due to too many failed attempts. Try again later.');
+    //throw new Error('Account is locked due to too many failed attempts. Try again later.');
   }
 
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
     user.failedLoginAttempts += 1;
-    if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
-      user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60000);
-    }
+    //if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+    //  user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60000);
+    //}
     await user.save();
 
     await AuditLog.create({ userId: user._id, action: AUDIT_ACTIONS.LOGIN_FAILURE, ipAddress: deviceInfo.ipAddress, userAgent: deviceInfo.userAgent });
     throw new Error('Invalid email or password');
   }
 
+  // Evaluate Risk before granting access
+  const riskResult = await riskEvaluator.evaluateRiskAndEnforce(user._id, deviceInfo);
+
   // Success
   user.failedLoginAttempts = 0;
   user.lockoutUntil = undefined;
   await user.save();
-
-  // Evaluate Risk before granting access
-  const riskResult = await riskEvaluator.evaluateRiskAndEnforce(user._id, deviceInfo);
 
   const historyEntry = {
     ipAddress: deviceInfo.ipAddress,
@@ -77,6 +77,7 @@ async function login(email, password, deviceInfo) {
 
   riskResult.profile.addLoginHistory(historyEntry);
 
+  // TODO: won't happen if MFA login?
   if (historyEntry.outcome === 'SUCCESS') {
     if (!riskResult.profile.knownIPs.includes(deviceInfo.ipAddress)) riskResult.profile.knownIPs.push(deviceInfo.ipAddress);
     if (!riskResult.profile.knownDevices.includes(deviceInfo.fingerprint) && deviceInfo.fingerprint !== 'unknown') riskResult.profile.knownDevices.push(deviceInfo.fingerprint);
@@ -92,10 +93,8 @@ async function login(email, password, deviceInfo) {
     throw new Error('Security violation: Login blocked due to critical risk factors. Account automatically locked.');
   }
 
-  // TODO: what happens when authenticator is required but not set up?
-  // If MFA is required (either by user setting or risk score)
-  //if (user.mfaEnabled || riskResult.responseAction.includes('MFA')) { // Always requires authenticator if enabled
-  if (user.mfaEnabled && riskResult.responseAction.includes('MFA')) { // Only require authenticator if enabled and risk is medium
+  // If MFA is required
+  if (riskResult.responseAction.includes('MFA') || riskResult.responseAction.includes('BLOCK')) {
     const mfaToken = tokenService.generateMfaToken(user, riskResult.score);
     // Don't generate actual sessions yet
     return {
