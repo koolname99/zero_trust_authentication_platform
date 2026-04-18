@@ -2,9 +2,9 @@ name: OWASP ZAP DAST
 
 on:
   push:
-    branches: [main, backend+frontend+login]
+    branches: [main, 'backend+frontend+login']
   pull_request:
-    branches: [main, backend+frontend+login]
+    branches: [main, 'backend+frontend+login']
   schedule:
     - cron: '0 4 * * *' # Every day at 04:00 UTC
 
