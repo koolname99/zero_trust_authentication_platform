@@ -16,7 +16,15 @@ const dashboardService = {
   terminateSession: async (id) => {
     const response = await api.delete(`/api/dashboard/sessions/${id}`);
     return response.data;
-  }
+  },
+  getUsers: async () => {
+    const response = await api.get('/api/dashboard/users');
+    return response.data;
+  },
+  removeUserMfa: async (id) => {
+    const response = await api.delete(`/api/dashboard/users/${id}/mfa`);
+    return response.data;
+  },
 };
 
 export default dashboardService;

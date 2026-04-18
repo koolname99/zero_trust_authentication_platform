@@ -96,4 +96,39 @@ router.delete('/sessions/:id', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/dashboard/users
+ * Returns all users with their MFA status
+ */
+router.get('/users', async (req, res, next) => {
+  try {
+    const users = await User.find()
+      .select('email role mfaEnabled createdAt')
+      .sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/dashboard/users/:id/mfa
+ * Clears MFA configuration for any user
+ */
+router.delete('/users/:id/mfa', async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.mfaEnabled = false;
+    user.mfaSecret = undefined;
+    user.recoveryCodes = [];
+    await user.save();
+
+    res.json({ message: 'MFA configuration removed successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
