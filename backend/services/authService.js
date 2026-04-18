@@ -94,7 +94,7 @@ async function login(email, password, deviceInfo) {
   }
 
   // If MFA is required
-  if (riskResult.responseAction.includes('MFA') || riskResult.responseAction.includes('BLOCK')) {
+  if (user.mfaEnabled && (riskResult.responseAction.includes('MFA') || riskResult.responseAction.includes('BLOCK'))) {
     const mfaToken = tokenService.generateMfaToken(user, riskResult.score);
     // Don't generate actual sessions yet
     return {

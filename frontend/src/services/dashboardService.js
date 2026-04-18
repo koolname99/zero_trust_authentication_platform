@@ -21,6 +21,14 @@ const dashboardService = {
     const response = await api.get('/api/dashboard/users');
     return response.data;
   },
+  getIdentities: async () => {
+    const response = await api.get('/api/dashboard/identities');
+    return response.data;
+  },
+  deleteUser: async (id) => {
+    const response = await api.delete(`/api/dashboard/users/${id}`);
+    return response.data;
+  },
   removeUserMfa: async (id) => {
     const response = await api.delete(`/api/dashboard/users/${id}/mfa`);
     return response.data;

@@ -3,6 +3,7 @@ const { requireAuth } = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const Session = require('../models/Session');
 const AuditLog = require('../models/AuditLog');
+const RiskProfile = require('../models/RiskProfile');
 
 const router = express.Router();
 
@@ -106,6 +107,68 @@ router.get('/users', async (req, res, next) => {
       .select('email role mfaEnabled createdAt')
       .sort({ createdAt: -1 });
     res.json(users);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/dashboard/identities
+ * Returns all users with their registration date, known IPs, and known device fingerprints
+ */
+router.get('/identities', async (req, res, next) => {
+  try {
+    const users = await User.find()
+      .select('email createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const profiles = await RiskProfile.find({ userId: { $in: users.map((u) => u._id) } })
+      .select('userId knownIPs knownDevices')
+      .lean();
+
+    const profileByUser = new Map(profiles.map((p) => [p.userId.toString(), p]));
+
+    const identities = users.map((u) => {
+      const profile = profileByUser.get(u._id.toString());
+      return {
+        _id: u._id,
+        email: u.email,
+        createdAt: u.createdAt,
+        knownIPs: profile?.knownIPs || [],
+        knownDevices: profile?.knownDevices || [],
+      };
+    });
+
+    res.json(identities);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * DELETE /api/dashboard/users/:id
+ * Deletes a user and cascades through their sessions, risk profile, and audit logs
+ */
+router.delete('/users/:id', async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+
+    if (req.user._id.toString() === userId) {
+      return res.status(400).json({ error: 'Cannot delete the account you are signed in as' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    await Promise.all([
+      Session.deleteMany({ userId }),
+      RiskProfile.deleteMany({ userId }),
+      AuditLog.deleteMany({ userId }),
+    ]);
+    await user.deleteOne();
+
+    res.json({ message: 'User and associated records deleted successfully' });
   } catch (err) {
     next(err);
   }

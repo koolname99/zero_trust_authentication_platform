@@ -5,6 +5,7 @@ import Sidebar from './components/Layout/Sidebar';
 import Footer from './components/Layout/Footer';
 import DashboardPage from './pages/DashboardPage';
 import SecurityPage from './pages/SecurityPage';
+import IdentitiesPage from './pages/IdentitiesPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProtectedRoute from './components/Shared/ProtectedRoute';
@@ -31,6 +32,7 @@ function AppLayout() {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/auth/mfa" element={<SecurityPage />} />
+              <Route path="/auth/identities" element={<IdentitiesPage />} />
             </Route>
 
             <Route path="*" element={<div className="glass-panel" style={{padding: '2rem'}}>404 Page Not Found</div>} />

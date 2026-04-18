@@ -1,11 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiUsers, FiActivity, FiAlertTriangle, FiShield } from 'react-icons/fi';
 
 const SecurityOverview = ({ data }) => {
+  const navigate = useNavigate();
+
   if (!data) return <div className="glass-panel" style={{ padding: '2rem' }}>Loading Overview...</div>;
 
   const cards = [
-    { title: 'Total Identities', value: data.totalUsers, icon: <FiUsers />, color: 'var(--accent-cyan)' },
+    { title: 'Total Identities', value: data.totalUsers, icon: <FiUsers />, color: 'var(--accent-cyan)', onClick: () => navigate('/auth/identities') },
     { title: 'Active Sessions', value: data.activeSessions, icon: <FiActivity />, color: 'var(--accent-emerald)' },
     { title: '24h Anomalies', value: data.anomalies, icon: <FiAlertTriangle />, color: 'var(--accent-rose)' },
     { title: 'Avg Risk Score', value: `${data.avgRiskScore}/100`, icon: <FiShield />, color: 'var(--accent-purple)' },
@@ -13,17 +16,28 @@ const SecurityOverview = ({ data }) => {
 
   return (
     <div style={styles.grid}>
-      {cards.map((card, idx) => (
-        <div key={idx} className="glass-panel" style={styles.card}>
-          <div style={{ ...styles.iconWrapper, color: card.color }}>
-            {card.icon}
+      {cards.map((card, idx) => {
+        const clickable = Boolean(card.onClick);
+        return (
+          <div
+            key={idx}
+            className="glass-panel"
+            style={{ ...styles.card, cursor: clickable ? 'pointer' : 'default' }}
+            onClick={card.onClick}
+            onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') card.onClick(); } : undefined}
+            role={clickable ? 'button' : undefined}
+            tabIndex={clickable ? 0 : undefined}
+          >
+            <div style={{ ...styles.iconWrapper, color: card.color }}>
+              {card.icon}
+            </div>
+            <div style={styles.content}>
+              <h4 style={styles.title}>{card.title}</h4>
+              <h2 style={{ ...styles.value, color: card.color }}>{card.value}</h2>
+            </div>
           </div>
-          <div style={styles.content}>
-            <h4 style={styles.title}>{card.title}</h4>
-            <h2 style={{ ...styles.value, color: card.color }}>{card.value}</h2>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
