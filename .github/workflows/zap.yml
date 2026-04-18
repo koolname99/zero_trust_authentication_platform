@@ -70,7 +70,7 @@ jobs:
         with:
           target: 'http://localhost:5000'
           cmd_options: '-a'
-          allow_issue_writing: true
+          allow_issue_writing: false
 
       - name: Upload ZAP report
         if: always()
