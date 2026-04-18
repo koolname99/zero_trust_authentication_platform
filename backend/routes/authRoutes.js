@@ -106,7 +106,7 @@ router.post('/refresh', refreshLimiter, async (req, res, next) => {
 // POST /logout
 router.post('/logout', requireAuth, async (req, res, next) => {
   try {
-    await authService.logout(req.session._id, req.jti);
+    await authService.logout(req.session._id, req.jti, req.user._id, getDeviceInfo(req));
     res.clearCookie('refreshToken');
     res.json({ message: 'Logged out successfully' });
   } catch (err) {

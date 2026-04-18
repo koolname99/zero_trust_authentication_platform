@@ -112,15 +112,22 @@ async function login(email, password, deviceInfo) {
   return { user, accessToken, refreshToken, riskScore: riskResult.score, mfaRequired: false };
 }
 
-async function logout(sessionId, accessTokenJti) {
-  // Disable Session
+async function logout(sessionId, accessTokenJti, userId, deviceInfo) {
   if (sessionId) {
     await Session.findByIdAndUpdate(sessionId, { isActive: false });
   }
 
-  // Blacklist token
   if (accessTokenJti) {
     await tokenService.blacklistToken(accessTokenJti, env.JWT_ACCESS_EXPIRY);
+  }
+
+  if (userId) {
+    await AuditLog.create({
+      userId,
+      action: AUDIT_ACTIONS.LOGOUT,
+      ipAddress: deviceInfo?.ipAddress,
+      userAgent: deviceInfo?.userAgent,
+    });
   }
 }
 

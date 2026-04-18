@@ -2,7 +2,9 @@ const express = require('express');
 const { requireAuth } = require('../middleware/authMiddleware');
 const mfaService = require('../services/mfaService');
 const tokenService = require('../services/tokenService');
+const AuditLog = require('../models/AuditLog');
 const User = require('../models/User');
+const { AUDIT_ACTIONS } = require('../utils/constants');
 const { env } = require('../config/environment');
 
 const router = express.Router();
@@ -73,8 +75,16 @@ router.post('/verify', requireMfaToken, async (req, res, next) => {
     if (!isValid) return res.status(401).json({ error: 'Invalid or expired MFA code' });
 
     // Success - grant real tokens
-    const { refreshToken, session } = await tokenService.generateRefreshToken(req.user, null, getDeviceInfo(req));
+    const deviceInfo = getDeviceInfo(req);
+    const { refreshToken, session } = await tokenService.generateRefreshToken(req.user, null, deviceInfo);
     const accessToken = tokenService.generateAccessToken(req.user, session._id);
+
+    await AuditLog.create({
+      userId: req.user._id,
+      action: AUDIT_ACTIONS.LOGIN_SUCCESS,
+      ipAddress: deviceInfo.ipAddress,
+      userAgent: deviceInfo.userAgent,
+    });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
