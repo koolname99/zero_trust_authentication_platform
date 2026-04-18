@@ -1,17 +1,19 @@
 import axios from 'axios';
+import { getDeviceFingerprint } from './deviceFingerprint';
 
 const api = axios.create({
   baseURL: 'http://localhost:5000',
   withCredentials: true, // Crucial for sending/receiving secure cookies
 });
 
-// Request Interceptor: Attach Access Token
+// Request Interceptor: Attach Access Token + Device Fingerprint
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    config.headers['x-device-fingerprint'] = await getDeviceFingerprint();
     return config;
   },
   (error) => Promise.reject(error)
@@ -53,7 +55,10 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await axios.post('http://localhost:5000/api/auth/refresh', {}, { withCredentials: true });
+        const { data } = await axios.post('http://localhost:5000/api/auth/refresh', {}, {
+          withCredentials: true,
+          headers: { 'x-device-fingerprint': await getDeviceFingerprint() },
+        });
 
         localStorage.setItem('accessToken', data.accessToken);
         originalRequest.headers['Authorization'] = `Bearer ${data.accessToken}`;

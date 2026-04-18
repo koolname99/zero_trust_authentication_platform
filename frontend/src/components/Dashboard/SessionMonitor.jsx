@@ -7,6 +7,11 @@ const SessionMonitor = ({ sessions, onUpdate }) => {
 
   if (!sessions) return <div className="glass-panel" style={{ padding: '2rem' }}>Loading Sessions...</div>;
 
+  const abbreviateFingerprint = (fp) => {
+    if (!fp || fp.length <= 10) return fp || 'unknown';
+    return `${fp.slice(0, 4)}...${fp.slice(-4)}`;
+  };
+
   const handleTerminate = async (id) => {
     setTerminating(id);
     try {
@@ -39,7 +44,12 @@ const SessionMonitor = ({ sessions, onUpdate }) => {
               <td style={{ ...styles.td, color: 'var(--text-secondary)' }}>{session.userId?.email || 'Unknown'}</td>
               <td style={styles.td}>
                 <div>{session.ipAddress}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{session.deviceFingerprint}</div>
+                <div
+                  style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace', cursor: 'help' }}
+                  title={session.deviceFingerprint}
+                >
+                  {abbreviateFingerprint(session.deviceFingerprint)}
+                </div>
               </td>
               <td style={styles.td}>{session.riskScoreAtCreation}</td>
               <td style={styles.td}>
