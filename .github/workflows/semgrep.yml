@@ -2,9 +2,9 @@ name: Semgrep
 
 on:
   push:
-    branches: [main, 'backend+frontend+login']
+    branches: [main, 'backend*']
   pull_request:
-    branches: [main, 'backend+frontend+login']
+    branches: [main, 'backend*']
   schedule:
     - cron: '0 3 * * *' # Every day at 03:00 UTC
 
