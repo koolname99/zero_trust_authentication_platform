@@ -99,7 +99,7 @@ const userEmailName = (u) => {
 const styles = {
   container: {
     padding: '2rem',
-    maxWidth: '1400px',
+    maxWidth: '1425px',
     margin: '0 auto',
     animation: 'fade-in 0.5s ease-out'
   },

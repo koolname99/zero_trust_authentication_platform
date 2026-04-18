@@ -46,7 +46,7 @@ const styles = {
   table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' },
   th: { padding: '1rem 0.5rem', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.85rem', textTransform: 'uppercase' },
   td: { padding: '1rem 0.5rem', color: 'var(--text-primary)', fontSize: '0.9rem' },
-  badge: { padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }
+  badge: { padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', whiteSpace: 'nowrap' }
 };
 
 export default AttackLogTable;
