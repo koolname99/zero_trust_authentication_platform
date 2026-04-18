@@ -11,7 +11,7 @@ const MFASetup = () => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.mfaEnabled) return;
     const loadMFA = async () => {
       try {
         const data = await authService.setupMFA();

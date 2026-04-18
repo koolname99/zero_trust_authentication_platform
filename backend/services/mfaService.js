@@ -44,6 +44,8 @@ function decryptSecret(encryptedString) {
 
 /**
  * Generates the backend artifacts needed for a user to scan a QR code.
+ * The new secret is held in Redis until the user confirms with a valid TOTP,
+ * so an existing active MFA secret is never overwritten mid-setup.
  */
 async function generateSetupPayload(user) {
   const secret = speakeasy.generateSecret({
@@ -51,22 +53,58 @@ async function generateSetupPayload(user) {
   });
 
   const qrDataUrl = await qrcode.toDataURL(secret.otpauth_url);
-  
-  // Temporarily store the unverified secret on the user object (they still have to confirm it)
-  // We encrypt it first so it is never plaintext in Mongo.
-  user.mfaSecret = encryptSecret(secret.base32);
-  
-  // Generate 10 Backup codes
+
   const recoveryCodes = Array.from({ length: 10 }, () => crypto.randomBytes(5).toString('hex'));
-  
-  // We should hash recovery codes before saving, but for simplicity of the return payload we hash later,
-  // or return plaintext and hash before DB bind. Let's hash before bind.
   const bcrypt = require('bcryptjs');
   const salt = await bcrypt.genSalt(12);
-  user.recoveryCodes = await Promise.all(recoveryCodes.map(code => bcrypt.hash(code, salt)));
-  
-  await user.save();
+  const hashedCodes = await Promise.all(recoveryCodes.map(code => bcrypt.hash(code, salt)));
+
+  const redisClient = getRedisClient();
+  if (!redisClient || redisClient.status !== 'ready') {
+    throw new Error('MFA setup is temporarily unavailable');
+  }
+
+  // 10-minute window to complete setup
+  await redisClient.setex(
+    `mfa_pending:${user._id}`,
+    600,
+    JSON.stringify({ secret: secret.base32, hashedCodes })
+  );
+
   return { qrDataUrl, recoveryCodes, secretValidation: secret.base32 };
+}
+
+/**
+ * Verifies the TOTP against the pending Redis secret and, on success,
+ * atomically commits it to the user document — replacing any prior secret.
+ */
+async function verifyAndCommitSetup(user, token) {
+  const redisClient = getRedisClient();
+  if (!redisClient || redisClient.status !== 'ready') {
+    throw new Error('MFA setup is temporarily unavailable');
+  }
+
+  const raw = await redisClient.get(`mfa_pending:${user._id}`);
+  if (!raw) throw new Error('No pending MFA setup found. Please restart setup.');
+
+  const { secret, hashedCodes } = JSON.parse(raw);
+
+  const isValid = speakeasy.totp.verify({
+    secret,
+    encoding: 'base32',
+    token,
+    window: 1,
+  });
+
+  if (!isValid) return false;
+
+  user.mfaSecret = encryptSecret(secret);
+  user.recoveryCodes = hashedCodes;
+  user.mfaEnabled = true;
+  await user.save();
+
+  await redisClient.del(`mfa_pending:${user._id}`);
+  return true;
 }
 
 /**
@@ -127,6 +165,7 @@ async function verifyRecoveryCode(user, code) {
 
 module.exports = {
   generateSetupPayload,
+  verifyAndCommitSetup,
   verifyTOTP,
   verifyRecoveryCode
 };

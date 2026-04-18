@@ -54,13 +54,10 @@ router.get('/setup', requireAuth, async (req, res, next) => {
 router.post('/enable', requireAuth, async (req, res, next) => {
   try {
     const { token } = req.body;
-    const isValid = await mfaService.verifyTOTP(req.user, token);
-    
+    const isValid = await mfaService.verifyAndCommitSetup(req.user, token);
+
     if (!isValid) return res.status(400).json({ error: 'Invalid or expired code. Try again.' });
-    
-    req.user.mfaEnabled = true;
-    await req.user.save();
-    
+
     res.json({ message: 'MFA successfully enabled on account' });
   } catch (err) {
     next(err);
