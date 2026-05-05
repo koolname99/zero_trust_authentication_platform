@@ -50,7 +50,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
     
     // Intercept MFA Challenges
     if (result.mfaRequired) {
-      return res.json({ mfaRequired: true, mfaToken: result.mfaToken });
+      return res.json({ mfaRequired: true, mfaToken: result.mfaToken, riskScore: result.riskScore });
     }
 
     // Assign secure cookies for refresh token
@@ -63,6 +63,8 @@ router.post('/login', loginLimiter, async (req, res, next) => {
 
     res.json({
       accessToken: result.accessToken,
+      riskScore: result.riskScore,
+      mfaRequired: result.mfaRequired,
       user: {
         id: result.user._id,
         email: result.user.email,

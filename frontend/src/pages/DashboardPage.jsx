@@ -5,8 +5,7 @@ import SecurityOverview from '../components/Dashboard/SecurityOverview';
 import RiskScoreChart from '../components/Dashboard/RiskScoreChart';
 import AttackLogTable from '../components/Dashboard/AttackLogTable';
 import SessionMonitor from '../components/Dashboard/SessionMonitor';
-import MetricsCards from '../components/Dashboard/MetricsCards';
-import VulnerabilityPanel from '../components/Dashboard/VulnerabilityPanel';
+
 import MFASetup from '../components/Auth/MFASetup';
 import { toast } from 'react-toastify';
 
@@ -62,13 +61,9 @@ const DashboardPage = () => {
             <SecurityOverview data={overview} />
           </div>
 
-          {/* Middle Row: Left=Chart, Right=AttackTable */}
-          <div style={{ gridColumn: 'span 8' }}>
+          {/* Middle Row: Chart (Full Width) */}
+          <div style={{ gridColumn: 'span 12' }}>
             <RiskScoreChart logs={logs} />
-          </div>
-          <div style={{ gridColumn: 'span 4' }}>
-             <VulnerabilityPanel />
-             <MetricsCards />
           </div>
 
           {/* Bottom Row: Logs and Sessions */}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiHome, FiLock, FiActivity, FiSettings } from 'react-icons/fi';
+import { FiHome, FiLock } from 'react-icons/fi';
 
 const Sidebar = () => {
   return (
@@ -16,16 +16,7 @@ const Sidebar = () => {
             <FiLock style={styles.icon} /> Security
           </Link>
         </li>
-        <li style={styles.listItem}>
-          <Link to="/attack-sim" style={styles.link}>
-            <FiActivity style={styles.icon} /> Simulations
-          </Link>
-        </li>
-        <li style={styles.listItem}>
-          <Link to="/settings" style={styles.link}>
-            <FiSettings style={styles.icon} /> Settings
-          </Link>
-        </li>
+
       </ul>
     </aside>
   );
