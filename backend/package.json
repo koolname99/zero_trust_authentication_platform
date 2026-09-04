@@ -10,26 +10,26 @@
   },
   "dependencies": {
     "express": "^5.2.1",
-    "mongoose": "^9.3.3",
+    "mongoose": "^9.9.4",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^3.0.3",
     "speakeasy": "^2.0.0",
     "qrcode": "^1.5.4",
-    "ioredis": "^5.4.1",
-    "helmet": "^8.0.0",
+    "ioredis": "^6.0.0",
+    "helmet": "^8.3.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^17.4.2",
     "winston": "^3.15.0",
-    "joi": "^17.13.3",
-    "express-rate-limit": "^7.4.1",
-    "rate-limit-redis": "^4.2.0",
+    "joi": "^18.2.5",
+    "express-rate-limit": "^8.7.0",
+    "rate-limit-redis": "^6.0.1",
     "cookie-parser": "^1.4.7",
     "crypto-js": "^4.2.0",
-    "geoip-lite": "^2.0.1",
-    "ua-parser-js": "^1.0.39"
+    "geoip-lite": "^2.0.3",
+    "ua-parser-js": "^2.0.10"
   },
   "devDependencies": {
-    "jest": "^30.3.0",
+    "jest": "^30.5.0",
     "supertest": "^7.0.0",
     "nodemon": "^3.1.7"
   }
